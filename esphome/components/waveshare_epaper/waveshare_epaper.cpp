@@ -4750,5 +4750,106 @@ void WaveshareEPaper13P3InK::dump_config() {
   LOG_UPDATE_INTERVAL(this);
 }
 
+// ========================================================
+//               10.85in
+// Datasheet/Specification/Reference:
+//  - https://files.waveshare.com/wiki/10.85inch_e-Paper_HAT%2B/10.85inch_e-Paper.pdf
+//  - https://github.com/waveshareteam/e-Paper/tree/master/E-paper_Separate_Program/10.85inch_e-Paper
+// ========================================================
+
+// using default wait_until_idle_() function
+void WaveshareEPaper13P3InK::initialize() {
+  // these exact timings are required for a proper reset/init
+  this->reset_pin_->digital_write(false);
+  delay(2);
+  this->reset_pin_->digital_write(true); // ok
+
+  this->command(0x4D);  // set soft start
+  this->data(0x55);
+
+  this->command(0xA6);
+  this->data(0x38);
+
+  this->command(0xB4);
+  this->data(0x5D);
+
+  this->command(0xB6);
+  this->data(0x80);
+
+  this->command(0xB7);
+  this->data(0x00);
+
+  this->command(0xF7);
+  this->data(0x02);
+
+  this->command(0xAE);
+  this->data(0x02); // ici ligne 182 sur epsohme
+
+  this->command(0xE0);
+  this->data(0x01); // ici ligne 182 sur epsohme
+
+  this->command(0x01);                            // driver output control
+  this->data((get_height_internal() - 1) % 256);  // Y
+  this->data((get_height_internal() - 1) / 256);  // Y
+  this->data(0x00);
+
+  this->command(0x11);  // data entry mode
+  this->data(0x03);
+
+  // SET WINDOWS
+  // XRAM_START_AND_END_POSITION
+  this->command(0x44);
+  this->data(0 & 0xFF);
+  this->data((0 >> 8) & 0x03);
+  this->data((get_width_internal() - 1) & 0xFF);
+  this->data(((get_width_internal() - 1) >> 8) & 0x03);
+  // YRAM_START_AND_END_POSITION
+  this->command(0x45);
+  this->data(0 & 0xFF);
+  this->data((0 >> 8) & 0x03);
+  this->data((get_height_internal() - 1) & 0xFF);
+  this->data(((get_height_internal() - 1) >> 8) & 0x03);
+
+  this->command(0x3C);  // Border setting
+  this->data(0x01);
+
+  this->command(0x18);  // use the internal temperature sensor
+  this->data(0x80);
+
+  // SET CURSOR
+  // XRAM_ADDRESS
+  this->command(0x4E);
+  this->data(0 & 0xFF);
+  this->data((0 >> 8) & 0x03);
+  // YRAM_ADDRESS
+  this->command(0x4F);
+  this->data(0 & 0xFF);
+  this->data((0 >> 8) & 0x03);
+}
+void HOT WaveshareEPaper13P3InK::display() {
+  // do single full update
+  this->command(0x24);
+  this->start_data_();
+  this->write_array(this->buffer_, this->get_buffer_length_());
+  this->end_data_();
+
+  // COMMAND DISPLAY REFRESH
+  this->command(0x22);
+  this->data(0xF7);
+  this->command(0x20);
+}
+
+int WaveshareEPaper13P3InK::get_width_internal() { return 960; }
+int WaveshareEPaper13P3InK::get_height_internal() { return 680; }
+uint32_t WaveshareEPaper13P3InK::idle_timeout_() { return 10000; }
+void WaveshareEPaper13P3InK::dump_config() {
+  LOG_DISPLAY("", "Waveshare E-Paper", this);
+  ESP_LOGCONFIG(TAG, "  Model: 13.3inK");
+  LOG_PIN("  Reset Pin: ", this->reset_pin_);
+  LOG_PIN("  DC Pin: ", this->dc_pin_);
+  LOG_PIN("  Busy Pin: ", this->busy_pin_);
+  LOG_UPDATE_INTERVAL(this);
+}
+
 }  // namespace waveshare_epaper
 }  // namespace esphome
