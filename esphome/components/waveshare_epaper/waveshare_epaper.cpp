@@ -4758,7 +4758,7 @@ void WaveshareEPaper13P3InK::dump_config() {
 // ========================================================
 
 // using default wait_until_idle_() function
-void WaveshareEPaper13P3InK::initialize() {
+void WaveshareEPaper10P85In::initialize() {
   // these exact timings are required for a proper reset/init
   this->reset_pin_->digital_write(false);
   delay(2);
@@ -4786,47 +4786,52 @@ void WaveshareEPaper13P3InK::initialize() {
   this->data(0x02); // ici ligne 182 sur epsohme
 
   this->command(0xE0);
-  this->data(0x01); // ici ligne 182 sur epsohme
+  this->data(0x01); // ici ligne 184 sur epsohme
 
-  this->command(0x01);                            // driver output control
-  this->data((get_height_internal() - 1) % 256);  // Y
-  this->data((get_height_internal() - 1) / 256);  // Y
+  // Command panel setting
+  this->command(0x00);
+  this->data(0x9F);
+  this->data(0x0D);
+
+  // COMMAND BOOSTER SOFT START CONTROL
+  this->command(0x06);
+  this->data(0x57);
+  this->data(0x24);
+  this->data(0x28);
+  this->data(0x32);
+  this->data(0x08);
+  this->data(0x48);
+
+    // Resolution settings
+  this->command(0x61);  // Command: TRES
+  this->data(0X02);     // Width: 1360
+  this->data(0XA8);
+  this->data(0x01);     // Height 480
+  this->data(0XE0);
+
+  this->command(0xF0);
+  this->data(0x00);     
   this->data(0x00);
+  this->data(0x00);
+  this->data(0x00);
+  
+  this->command(0x60);
+  this->data(0x31);
 
-  this->command(0x11);  // data entry mode
-  this->data(0x03);
+  // COMMAND WRITE VCOM REGISTER
+  this->command(0x50);
+  this->data(0x97);
 
-  // SET WINDOWS
-  // XRAM_START_AND_END_POSITION
-  this->command(0x44);
-  this->data(0 & 0xFF);
-  this->data((0 >> 8) & 0x03);
-  this->data((get_width_internal() - 1) & 0xFF);
-  this->data(((get_width_internal() - 1) >> 8) & 0x03);
-  // YRAM_START_AND_END_POSITION
-  this->command(0x45);
-  this->data(0 & 0xFF);
-  this->data((0 >> 8) & 0x03);
-  this->data((get_height_internal() - 1) & 0xFF);
-  this->data(((get_height_internal() - 1) >> 8) & 0x03);
+  this->command(0xE8);  // Command: VBD
+  this->data(0x01);     // VBD: 0x01 for 10.85in e-Paper
 
-  this->command(0x3C);  // Border setting
-  this->data(0x01);
+  // command power on
+  this->command(0x04);
+  this->wait_until_idle_();
+  delay(10);
 
-  this->command(0x18);  // use the internal temperature sensor
-  this->data(0x80);
-
-  // SET CURSOR
-  // XRAM_ADDRESS
-  this->command(0x4E);
-  this->data(0 & 0xFF);
-  this->data((0 >> 8) & 0x03);
-  // YRAM_ADDRESS
-  this->command(0x4F);
-  this->data(0 & 0xFF);
-  this->data((0 >> 8) & 0x03);
 }
-void HOT WaveshareEPaper13P3InK::display() {
+void HOT WaveshareEPaper10P85In::display() {
   // do single full update
   this->command(0x24);
   this->start_data_();
@@ -4839,12 +4844,12 @@ void HOT WaveshareEPaper13P3InK::display() {
   this->command(0x20);
 }
 
-int WaveshareEPaper13P3InK::get_width_internal() { return 960; }
-int WaveshareEPaper13P3InK::get_height_internal() { return 680; }
-uint32_t WaveshareEPaper13P3InK::idle_timeout_() { return 10000; }
-void WaveshareEPaper13P3InK::dump_config() {
+int WaveshareEPaper10P85In::get_width_internal() { return 960; }
+int WaveshareEPaper10P85In::get_height_internal() { return 680; }
+uint32_t WaveshareEPaper10P85In::idle_timeout_() { return 10000; }
+void WaveshareEPaper10P85In::dump_config() {
   LOG_DISPLAY("", "Waveshare E-Paper", this);
-  ESP_LOGCONFIG(TAG, "  Model: 13.3inK");
+  ESP_LOGCONFIG(TAG, "  Model: 10.85in");
   LOG_PIN("  Reset Pin: ", this->reset_pin_);
   LOG_PIN("  DC Pin: ", this->dc_pin_);
   LOG_PIN("  Busy Pin: ", this->busy_pin_);
